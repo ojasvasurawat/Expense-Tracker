@@ -1,13 +1,27 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import declerative_base
+from sqlmodel import Field, SQLModel
+from datetime import datetime
+from enum import Enum
 
-Base = declerative_base()
+class User(SQLModel, table=True):
+    __tablename__ = 'users'
+    id: int | None = Field(default=None, primary_key=True)
+    displayName: str | None = Field(default=None)
+    email: str | None = Field(default=None, unique=True)
+    password: str | None = Field(default=None)
+    sub: str | None = Field(default=None)
+    income: int
 
-class User(Base):
-    __tablename__ = "users"
+class Category(Enum):
+    FOOD = "food"
+    TRAVEL = "trevel"
+    STAY = "stay"
+    OTHER = "other"
 
-    id = Column(Integer, primery_key=True)
-    displayName = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-
+class Expense(SQLModel, table=True):
+    __tablename__ = 'expenses'
+    id: int | None = Field(default=None, primary_key=True)
+    userId: int = Field(foreign_key="users.id", nullable=False)
+    category: Category
+    amount: int | None = Field(default=None)
+    createdAt: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
