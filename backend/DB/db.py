@@ -5,9 +5,9 @@ from enum import Enum
 class User(SQLModel, table=True):
     __tablename__ = 'users'
     id: int | None = Field(default=None, primary_key=True)
-    displayName: str | None = Field(default=None)
-    email: str | None = Field(default=None, unique=True)
-    password: str | None = Field(default=None)
+    displayName: str | None = Field(default=None, min_length=3, max_length=50)
+    email: str | None = Field(default=None, unique=True, min_length=3, max_length=320)
+    password: str | None = Field(default=None, max_length=20)
     sub: str | None = Field(default=None)
     income: int
 

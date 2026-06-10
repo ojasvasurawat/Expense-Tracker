@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from DB.db import User, Category, Expense
 from sqlmodel import SQLModel, Session, create_engine
-from Auth.auth import signUp, SignUpItem, router
+from Auth.auth import router
 from DB.redis_client import client
 
 app = FastAPI()

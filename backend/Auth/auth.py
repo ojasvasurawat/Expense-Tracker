@@ -39,47 +39,86 @@ conf = ConnectionConfig(
 engine = create_engine(POSTGRES_URI)
 SQLModel.metadata.create_all(engine)
 
-class SignUpItem(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    email: EmailStr = Field(min_length=3, max_length=320)
-    displayName: str = Field(min_length=3, max_length=50)
-    password: str = Field(min_length=8, max_length=20)
-    sub: str
+class UserItem(BaseModel):
+    id: int | None = Field(default=None, primary_key=True)
+    displayName: str | None = Field(default=None, min_length=3, max_length=50)
+    email: str | None = Field(default=None, unique=True, min_length=3, max_length=320)
+    password: str | None = Field(default=None, max_length=20)
+    sub: str | None = Field(default=None)
+    income: int
 
 
 @router.post("/signup")
-async def signUp(item: SignUpItem):
+async def signUp(user: UserItem):
     with Session(engine) as session:
-        existingItem = session.query(User).filter(User.email == item.email).scalar()
-        if existingItem:
+        existingUser = session.query(User).filter(User.email == user.email).scalar()
+        if existingUser:
             return {"message": "There is already an account with this email"}
 
         try:
-            password_bytes = item.password.encode('utf-8')
-            salt = bcrypt.gensalt(rounds=5)
-            hashedPasswordBytes = bcrypt.hashpw(password_bytes, salt)
-            if item.sub != "":
-                sub_bytes = item.sub.encode('utf-8')
+            if user.sub != "":
+                sub_bytes = user.sub.encode('utf-8')
                 salt = bcrypt.gensalt(rounds=5)
                 hashedSubBytes = bcrypt.hashpw(sub_bytes, salt)
-                item.sub = hashedSubBytes.decode('utf-8')
-                session.add(item)
+                user.sub = hashedSubBytes.decode('utf-8')
+                dbUser = User(
+                    displayName=user.displayName,
+                    email=user.email,
+                    password=user.password,
+                    sub=user.sub,
+                    income=user.income
+                )
+                session.add(dbUser)
+                session.commit()
                 return {"message": "user created successfully"}
             else:
                 validationCode = random.randint(100000, 999999)
+                print(validationCode)
                 try:
                     message = MessageSchema(
                         subject = "Expense Tracker email validation code",
-                        recipients = [item.email],
+                        recipients = [user.email],
                         body = f"Your validation code is:\n\n{validationCode}\n\nEnter this in your application",
                         subtype = MessageType.plain
                     )
                     fm = FastMail(conf)
                     await fm.send_message(message)
-                    await client.set(item.email, validationCode, ex=120)
+                    await client.set(user.email, validationCode, ex=120)
                     return {"message": "we have send you a code on mail"}
                 except Exception as e:
                     print(e)
                     return {"message": "error occure during sending mail"}
         except Exception as e:
             print(e)
+
+
+
+class Code(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=6, max_length=6)
+
+@router.post("/verifyCode")
+async def verifyCode(user: UserItem, code: Code):
+    with Session(engine) as session:
+        try:
+            password_bytes = user.password.encode('utf-8')
+            salt = bcrypt.gensalt(rounds=5)
+            hashedPasswordBytes = bcrypt.hashpw(password_bytes, salt)
+
+            originalCode = await client.get(user.email)
+            if code.code == originalCode:
+                user.password = hashedPasswordBytes.decode('utf-8')
+                dbUser = User(
+                    displayName=user.displayName,
+                    email=user.email,
+                    password=user.password,
+                    sub=user.sub,
+                    income=user.income
+                )
+                session.add(dbUser)
+                session.commit()
+                return{"message": "user created"}
+            return{"message": "wrong code"}
+        except Exception as e:
+            print(e)
+            return{"message": "error occure in verifying code"}
