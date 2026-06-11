@@ -122,3 +122,49 @@ async def verifyCode(user: UserItem, code: Code):
         except Exception as e:
             print(e)
             return{"message": "error occure in verifying code"}
+        
+
+
+class SignInItem(BaseModel):
+    email: str
+    password: str
+    sub: str
+
+@router.post("/signin")
+async def signIn(user: SignInItem):
+    with Session(engine) as session:
+        existingUser = session.query(User).filter(User.email == user.email).scalar()
+        if not existingUser:
+            return{"message": "user not found"}
+        if user.sub != "":
+            compare = bcrypt.checkpw(user.sub.encode('utf-8'), existingUser.sub.encode('utf-8'))
+            if compare:
+                token = jwt.encode({"id": existingUser.id}, JWT_SECRET, algorithm="HS256")
+                return{
+                    "user":{
+                        "id": existingUser.id,
+                        "displayName": existingUser.displayName,
+                        "email": existingUser.email,
+                        "income": existingUser.income
+                    },
+                    "message": "user signed in successfully",
+                    "token": token
+                }
+            else:
+                return{"message": "incorrect credential"}
+        else:
+            compare = bcrypt.checkpw(user.password.encode('utf-8'), existingUser.password.encode('utf-8'))
+            if compare:
+                token = jwt.encode({"id": existingUser.id}, JWT_SECRET, algorithm="HS256")
+                return{
+                    "user":{
+                        "id": existingUser.id,
+                        "displayName": existingUser.displayName,
+                        "email": existingUser.email,
+                        "income": existingUser.income
+                    },
+                    "message": "user signed in successfully",
+                    "token": token
+                }
+            else:
+                return{"message": "incorrect credential"}
