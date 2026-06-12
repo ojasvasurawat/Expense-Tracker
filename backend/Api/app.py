@@ -1,10 +1,11 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.routing import APIRouter
 from DB.db import User, Category, Expense
 from sqlmodel import SQLModel, Session, create_engine
 from Auth.auth import router
 from DB.redis_client import client
+from Middleware.middleware import auth
 
 app = FastAPI()
 
@@ -18,21 +19,16 @@ async def startup():
 
 api_router = APIRouter()
 
+
+
+
+@router.get("/middleware-test")
+async def get_expenses(user_id: int = Depends(auth)):
+    return {"userId": user_id}
+
+
+
 app.include_router(router)
-
-# user_1 = User(displayName="xyz", email="xyz@gmail.com", password="xyz", sub=None, income=200000)
-# DATABASE_URL = "postgresql://postgres:postgres,123;@localhost:5432/Expense-Tracker"
-# engine = create_engine(DATABASE_URL)
-
-# SQLModel.metadata.create_all(engine)
-
-# with Session(engine) as session:
-#     print("Working...")
-#     session.add(user_1)
-#     session.commit()
-
-
-# app.post("/signup")(signUp)
 
 
 if __name__ == "__app__":
