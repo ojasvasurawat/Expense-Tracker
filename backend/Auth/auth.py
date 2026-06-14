@@ -9,6 +9,7 @@ import random
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from fastapi.routing import APIRouter
 from DB.redis_client import client
+from fastapi import HTTPException
 
 load_dotenv()
 POSTGRES_URI = os.getenv("POSTGRES_URI")
@@ -90,6 +91,7 @@ async def signUp(user: UserItem):
                     return {"message": "error occure during sending mail"}
         except Exception as e:
             print(e)
+            raise HTTPException(status_code=404, detail="error occure in signup")
 
 
 
@@ -121,7 +123,7 @@ async def verifyCode(user: UserItem, code: Code):
             return{"message": "wrong code"}
         except Exception as e:
             print(e)
-            return{"message": "error occure in verifying code"}
+            raise HTTPException(status_code=404, detail="error occure in verifying cod")
         
 
 

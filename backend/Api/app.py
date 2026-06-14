@@ -21,7 +21,6 @@ api_router = APIRouter()
 
 
 
-
 @router.get("/middleware-test")
 async def get_expenses(user_id: int = Depends(auth)):
     return {"userId": user_id}

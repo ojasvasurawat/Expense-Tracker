@@ -22,3 +22,4 @@ async def auth(Authorization: str = Header(None)):
 
     except Exception as e:
         print(e)
+        raise HTTPException(status_code=404, details="Error in authorization")
